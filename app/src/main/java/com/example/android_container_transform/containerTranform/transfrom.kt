@@ -1,13 +1,12 @@
 package com.example.android_container_transform.containerTranform
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.with
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -36,7 +35,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.android_container_transform.R
@@ -64,6 +62,16 @@ val itemList = listOf(
         imageResId = R.drawable.sr,
         title = "ខេត្តសៀមរាប",
         description = "ខេត្តសៀមរាប គឺជាខេត្តមួយដែលមានទីតាំងនៅភាគខាងពាយ័ព្យនៃប្រទេសកម្ពុជា ដែលមានទីតាំងស្ថិតនៅក្បែរបឹងទន្លេសាប។ ទីរួមខេត្តរបស់ខេត្តសៀមរាបនេះគឺ ក្រុងសៀមរាប។ ខេត្តសៀមរាបត្រូវបានដាក់ឈ្មោះបែបនេះដើម្បី រំលឹកដល់ជ័យជំនះនៅកងទ័ពខ្មែរលើកងទ័ពសៀមនៅសម័យលង្វែកសតវត្ស១៦។"
+    ),
+    ItemData(
+        imageResId = R.drawable.kpt,
+        title = "ខេត្តកំពង់ធំ",
+        description = "ខកំពង់ធំ (អ.ស.អ.: [kɑmpɔːŋ tʰom]) គឺជាខេត្តមួយក្នុងប្រទេសកម្ពុជា ។ វាមានព្រំប្រទល់ជាប់ខេត្តសៀមរាប នៅភាគពាយព្យ ព្រះវិហារ នៅភាគខាងជើង ស្ទឹងត្រែងនៅភាគឦសាន ក្រចេះនៅខាងកើត កំពង់ចាម កំពង់ឆ្នាំង នៅខាងត្បូង និង បឹងទន្លេសាបនៅភាគខាងលិច។"
+    ),
+    ItemData(
+        imageResId = R.drawable.ps,
+        title = "ខេត្តពោតិ៍សាត់",
+        description = "ខេត្តពោធិ៍សាត់. ខេត្តនៃព្រះរាជាណាចក្រកម្ពុជា. ភាសា តាមដាន · កែប្រែ. ខេត្តពោធិ៍សាត់ជាខេត្តមួយនៅភាគខាងលិចនៃប្រទេសកម្ពុជា។ ខេត្តពោធិ៍សាត់មានទីរួមខេត្តនៅ ក្រុងពោធិ៍សាត់។ ខេត្តពោធិ៍សាត់គឺជាខេត្តមួយដែលសិ្ថតនៅក្នុងតំបន់បឹងទនេ្លសាប មានទីតាំងនៅទិសបចិ្ចមនៃប្រទេស។"
     )
 )
 
@@ -86,19 +94,17 @@ fun ItemCard(item: ItemData) {
 
 @Composable
 fun ExpandableItemCard(item: ItemData, onClick: () -> Unit) {
-    // Load image using painterResource
     val imagePainter: Painter = painterResource(item.imageResId)
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp)
-            .clickable { onClick() }, // Expand to full screen on click
+            .clickable { onClick() },
         shape = RoundedCornerShape(8.dp),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Image
             Image(
                 painter = imagePainter,
                 contentDescription = item.title,
@@ -106,19 +112,9 @@ fun ExpandableItemCard(item: ItemData, onClick: () -> Unit) {
                     .fillMaxWidth()
                     .height(180.dp)
             )
-
             Spacer(modifier = Modifier.height(8.dp))
-
-            // Title
-            Text(
-                text = item.title,
-                style = MaterialTheme.typography.titleMedium,
-                fontSize = 20.sp
-            )
-
+            Text(text = item.title, style = MaterialTheme.typography.titleMedium, fontSize = 20.sp)
             Spacer(modifier = Modifier.height(8.dp))
-
-            // Shortened description
             Text(
                 text = item.description,
                 style = MaterialTheme.typography.bodyMedium,
@@ -129,6 +125,7 @@ fun ExpandableItemCard(item: ItemData, onClick: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun FullScreenItem(item: ItemData, onClose: () -> Unit) {
     val imagePainter: Painter = painterResource(item.imageResId)
@@ -137,55 +134,55 @@ fun FullScreenItem(item: ItemData, onClose: () -> Unit) {
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .clickable { onClose() }, // Exit full screen on click
+            .clickable { onClose() },
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-        ) {
+        Column(modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)) {
             Image(
                 painter = imagePainter,
                 contentDescription = item.title,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f) // Take up as much height as possible
+                    .weight(1f)
             )
-
             Spacer(modifier = Modifier.height(16.dp))
-
-            // Display title and description on full screen
-            Text(
-                text = item.title,
-                color = Color.White,
-                fontSize = 24.sp
-            )
-
+            Text(text = item.title, color = Color.White, fontSize = 24.sp)
             Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = item.description,
-                color = Color.White,
-                fontSize = 16.sp
-            )
+            Text(text = item.description, color = Color.White, fontSize = 16.sp)
         }
     }
 }
 
 @Composable
 fun DisplayItems(items: List<ItemData>) {
-    var selectedItem by remember { mutableStateOf<ItemData?>(null) } // Track selected item for full screen
+    var selectedItem by remember { mutableStateOf<ItemData?>(null) }
 
-    // If an item is selected, show it in full screen
     if (selectedItem != null) {
-        FullScreenItem(selectedItem!!) { selectedItem = null } // Show full screen for the selected item
-    } else {
-        LazyColumn(
-            modifier = Modifier.padding(16.dp)
+        // Slide and Scale Animation when selected
+        AnimatedVisibility(
+            visible = selectedItem != null,
+            enter = slideInVertically(
+                initialOffsetY = { it },
+                animationSpec = tween(durationMillis = 8000) // Slow down the slide-in animation
+            ) + scaleIn(
+                animationSpec = tween(durationMillis = 8000) // Slow down the scale-in animation
+            ),
+            exit = slideOutVertically(
+                targetOffsetY = { it },
+                animationSpec = tween(durationMillis = 1000) // Slow down the slide-out animation
+            ) + scaleOut(
+                animationSpec = tween(durationMillis = 1000) // Slow down the scale-out animation
+            )
         ) {
+            FullScreenItem(selectedItem!!) { selectedItem = null }
+        }
+
+    } else {
+        LazyColumn(modifier = Modifier.padding(16.dp)) {
             items(items) { item ->
-                ExpandableItemCard(item) { selectedItem = item } // Show normal card
+                ExpandableItemCard(item) { selectedItem = item }
             }
         }
     }
