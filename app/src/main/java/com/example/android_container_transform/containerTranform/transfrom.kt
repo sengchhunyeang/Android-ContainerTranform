@@ -1,12 +1,13 @@
 package com.example.android_container_transform.containerTranform
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,10 +18,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.android_container_transform.R
@@ -76,23 +78,6 @@ val itemList = listOf(
 )
 
 @Composable
-fun ItemCard(item: ItemData) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-    ) {
-        Image(
-            painter = painterResource(id = item.imageResId),
-            contentDescription = item.title,
-            modifier = Modifier.size(width = 800.dp, height = 300.dp)
-        )
-        Text(text = item.title, style = MaterialTheme.typography.displayLarge)
-        Text(text = item.description, style = MaterialTheme.typography.displaySmall)
-    }
-}
-
-@Composable
 fun ExpandableItemCard(item: ItemData, onClick: () -> Unit) {
     val imagePainter: Painter = painterResource(item.imageResId)
 
@@ -119,22 +104,19 @@ fun ExpandableItemCard(item: ItemData, onClick: () -> Unit) {
                 text = item.description,
                 style = MaterialTheme.typography.bodyMedium,
                 fontSize = 16.sp,
-                maxLines = 3
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
 }
-
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun FullScreenItem(item: ItemData, onClose: () -> Unit) {
+fun FullScreenItem(item: ItemData, onClose: () -> Unit ) {
     val imagePainter: Painter = painterResource(item.imageResId)
-
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
-            .clickable { onClose() },
+            .background(Color.Black),
         contentAlignment = Alignment.Center
     ) {
         Column(modifier = Modifier
@@ -154,36 +136,38 @@ fun FullScreenItem(item: ItemData, onClose: () -> Unit) {
         }
     }
 }
-
 @Composable
 fun DisplayItems(items: List<ItemData>) {
     var selectedItem by remember { mutableStateOf<ItemData?>(null) }
 
-    if (selectedItem != null) {
-        // Slide and Scale Animation when selected
-        AnimatedVisibility(
-            visible = selectedItem != null,
-            enter = slideInVertically(
-                initialOffsetY = { it },
-                animationSpec = tween(durationMillis = 8000) // Slow down the slide-in animation
-            ) + scaleIn(
-                animationSpec = tween(durationMillis = 8000) // Slow down the scale-in animation
-            ),
-            exit = slideOutVertically(
-                targetOffsetY = { it },
-                animationSpec = tween(durationMillis = 1000) // Slow down the slide-out animation
-            ) + scaleOut(
-                animationSpec = tween(durationMillis = 1000) // Slow down the scale-out animation
-            )
-        ) {
-            FullScreenItem(selectedItem!!) { selectedItem = null }
-        }
+    // Back button handling
+    BackHandler(enabled = selectedItem != null) {
+        selectedItem = null // Close the full-screen view
+    }
 
-    } else {
+    // Use a Box to layer content
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Normal view showing the list of items
         LazyColumn(modifier = Modifier.padding(16.dp)) {
             items(items) { item ->
-                ExpandableItemCard(item) { selectedItem = item }
+                ExpandableItemCard(item) {
+                    selectedItem = item
+                } // Set the clicked item to full-screen
+            }
+        }
+        // Full-screen view for the selected item with proper animation handling
+        AnimatedVisibility(
+            visible = selectedItem != null,
+            enter = slideInHorizontally(
+                initialOffsetX = { fullWidth -> fullWidth }, // Slide in from the right
+                animationSpec = tween(durationMillis = 700) // Enter animation duration
+            ) + fadeIn(animationSpec = tween(durationMillis = 700)),
+            modifier = Modifier.fillMaxSize() // Ensure full screen
+        ) {
+            selectedItem?.let {
+                FullScreenItem(it) { selectedItem = null } // Reset selected item on click
             }
         }
     }
 }
+
