@@ -2,12 +2,11 @@ package com.example.android_container_transform.containerTranform
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,12 +20,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,6 +39,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.android_container_transform.R
+import kotlinx.coroutines.delay
 
 data class ItemData(
     val imageResId: Int,
@@ -111,7 +111,7 @@ fun ExpandableItemCard(item: ItemData, onClick: () -> Unit) {
     }
 }
 @Composable
-fun FullScreenItem(item: ItemData, onClose: () -> Unit ) {
+fun FullScreenItem(item: ItemData, onClose: @Composable () -> Unit) {
     val imagePainter: Painter = painterResource(item.imageResId)
     Box(
         modifier = Modifier
@@ -139,10 +139,12 @@ fun FullScreenItem(item: ItemData, onClose: () -> Unit ) {
 @Composable
 fun DisplayItems(items: List<ItemData>) {
     var selectedItem by remember { mutableStateOf<ItemData?>(null) }
+    var isExiting by remember { mutableStateOf(false) }
 
     // Back button handling
     BackHandler(enabled = selectedItem != null) {
-        selectedItem = null // Close the full-screen view
+        // Start exit animation
+        isExiting = true
     }
 
     // Use a Box to layer content
@@ -151,23 +153,43 @@ fun DisplayItems(items: List<ItemData>) {
         LazyColumn(modifier = Modifier.padding(16.dp)) {
             items(items) { item ->
                 ExpandableItemCard(item) {
-                    selectedItem = item
-                } // Set the clicked item to full-screen
+                    selectedItem = item // Set the clicked item to full-screen
+                    isExiting = false // Ensure we're not exiting when selecting an item
+                }
             }
         }
+
         // Full-screen view for the selected item with proper animation handling
         AnimatedVisibility(
-            visible = selectedItem != null,
-            enter = slideInHorizontally(
-                initialOffsetX = { fullWidth -> fullWidth }, // Slide in from the right
+            visible = selectedItem != null && !isExiting,
+            enter = slideInVertically(
+                initialOffsetY = { fullHeight -> fullHeight }, // Slide in from below
                 animationSpec = tween(durationMillis = 700) // Enter animation duration
             ) + fadeIn(animationSpec = tween(durationMillis = 700)),
+            exit = slideOutVertically(
+                targetOffsetY = { fullHeight -> -fullHeight }, // Slide out to above
+                animationSpec = tween(durationMillis = 300) // Exit animation duration
+            ) + fadeOut(animationSpec = tween(durationMillis = 300)),
             modifier = Modifier.fillMaxSize() // Ensure full screen
         ) {
-            selectedItem?.let {
-                FullScreenItem(it) { selectedItem = null } // Reset selected item on click
+            selectedItem?.let { item ->
+                FullScreenItem(item) {
+                    // Close the full-screen view by triggering the exit animation
+                    isExiting = true
+                    // Reset selectedItem after animation delay
+                    LaunchedEffect(isExiting) {
+                        if (isExiting) {
+                            delay(300) // Match this with the exit animation duration
+                            selectedItem = null
+                            isExiting = false // Reset the exit state
+                        }
+                    }
+                }
             }
         }
     }
 }
+
+
+
 
